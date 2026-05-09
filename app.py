@@ -101,14 +101,14 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
     ws = wb.active
     
     # Definícia farieb optimalizovaných pre ČB tlač
-    fill_sat = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid") # Svetlošedá (Sobota)
+    fill_sat = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid") # Stmavená sivá (Sobota)
     fill_sun = PatternFill(start_color="BFBFBF", end_color="BFBFBF", fill_type="solid") # Stredne šedá (Nedeľa)
     fill_hol = PatternFill(start_color="595959", end_color="595959", fill_type="solid") # Tmavosivá (Sviatok)
 
     f_header = Font(name='Arial', size=11, bold=True)
     f_bold = Font(name='Arial', size=9, bold=True)
     f_norm = Font(name='Arial', size=9)
-    f_white = Font(name='Arial', size=9, color="FFFFFF", bold=True) # Biele písmo pre kontrast na tmavom pozadí
+    f_white = Font(name='Arial', size=9, color="FFFFFF", bold=True)
     
     align_c = Alignment(horizontal='center', vertical='center', wrap_text=True)
     border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
@@ -160,11 +160,11 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
             if idx == 1:
                 if is_sv:
                     cell.fill = fill_hol
-                    cell.font = f_white # Biele písmo pre sviatok
+                    cell.font = f_white
                 elif dow == 5: cell.fill = fill_sat
                 elif dow == 6: cell.fill = fill_sun
 
-    # Päta a vzorce
+    # Päta
     s_row = 11 + dni_count
     ws.merge_cells(f'A{s_row}:B{s_row}'); ws[f'A{s_row}'] = "Odpracované hodiny s p o l u:"
     ws[f'A{s_row}'].alignment = Alignment(horizontal='left'); ws[f'A{s_row}'].font = f_bold
@@ -174,17 +174,14 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
     ws.merge_cells(f'F{s_row}:G{s_row}'); ws[f'F{s_row}'] = f"=C{s_row}-I4"; ws[f'F{s_row}'].font = f_bold; ws[f'F{s_row}'].alignment = align_c
     for c_idx in range(1, 11): ws.cell(s_row, c_idx).border = border
     
-    # ZLÚČENÉ PODPISY (OPRAVA VIZUÁLU)
+    # Zlúčené podpisy
     sig_r = s_row + 3
-    ws.merge_cells(f'B{sig_r}:D{sig_r}'); ws[f'B{sig_r}'] = "____________________________"
-    ws.merge_cells(f'G{sig_r}:I{sig_r}'); ws[f'G{sig_r}'] = "____________________________"
-    ws[f'B{sig_r}'].alignment = align_c; ws[f'G{sig_r}'].alignment = align_c
-    
-    ws.merge_cells(f'B{sig_r+1}:D{sig_r+1}'); ws[f'B{sig_r+1}'] = "podpis zamestnanca"
-    ws.merge_cells(f'G{sig_r+1}:I{sig_r+1}'); ws[f'G{sig_r+1}'] = "podpis vedúceho"
-    ws[f'B{sig_r+1}'].alignment = align_c; ws[f'G{sig_r+1}'].alignment = align_c
+    ws.merge_cells(f'B{sig_r}:D{sig_r}'); ws[f'B{sig_r}'] = "____________________________"; ws[f'B{sig_r}'].alignment = align_c
+    ws.merge_cells(f'G{sig_r}:I{sig_r}'); ws[f'G{sig_r}'] = "____________________________"; ws[f'G{sig_r}'].alignment = align_c
+    ws.merge_cells(f'B{sig_r+1}:D{sig_r+1}'); ws[f'B{sig_r+1}'] = "podpis zamestnanca"; ws[f'B{sig_r+1}'].alignment = align_c
+    ws.merge_cells(f'G{sig_r+1}:I{sig_r+1}'); ws[f'G{sig_r+1}'] = "podpis vedúceho"; ws[f'G{sig_r+1}'].alignment = align_c
 
-    widths = [6, 18, 10, 10, 10, 10, 10, 10, 10, 10]
+    widths = [8, 18, 10, 10, 10, 10, 10, 10, 11, 11]
     for i, w in enumerate(widths, 1): ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
 
     wb.save(output)
