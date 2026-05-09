@@ -12,28 +12,30 @@ SVIATKY_2026 = {1: [1, 6], 4: [3, 6], 5: [1, 8], 7: [5], 8: [29], 9: [1, 15], 11
 
 st.set_page_config(page_title="Generátor Výkazu NR SR", layout="wide")
 
-# Funkcia na resetovanie polí
+# Inicializácia počítadla pre reset (ak neexistuje)
+if 'reset_counter' not in st.session_state:
+    st.session_state.reset_counter = 0
+
+# Funkcia na resetovanie - zmení seed, čím vynúti prekreslenie widgetov
 def reset_cycle():
-    for key in list(st.session_state.keys()):
-        if key.startswith("d_") or key.startswith("n_") or key.startswith("a_"):
-            del st.session_state[key]
+    st.session_state.reset_counter += 1
 
 st.title("📄 Generátor pracovného výkazu")
 
-# --- BOČNÝ PANEL (NASTAVENIA) ---
+# --- BOČNÝ PANEL ---
 with st.sidebar:
     st.header("Nastavenia")
     meno = st.text_input("Meno a Priezvisko:", placeholder="Martin Haluska")
-    mesiac_meno = st.selectbox("Mesiac:", MESIACE_SK, index=4) # Predvolený Máj (index 4)
+    mesiac_meno = st.selectbox("Mesiac:", MESIACE_SK, index=0)
     mesiac_idx = MESIACE_SK.index(mesiac_meno) + 1
     rok = st.number_input("Rok:", value=2026)
-    zmena_skupina = st.selectbox("Základný cyklus:", ["Zmena 1", "Zmena 2", "Zmena 3", "Zmena 4"], index=3) # Predvolená Zmena 4
-    fond = st.number_input("Fond hodín na mesiac:", value=147.0, step=0.5)
+    zmena_skupina = st.selectbox("Základný cyklus:", ["Zmena 1", "Zmena 2", "Zmena 3", "Zmena 4"], index=0)
+    fond = st.number_input("Fond hodín na mesiac:", value=154.0, step=0.5)
     utvar = st.text_input("Organizačný útvar:", value="Odbor obrany, bezpečnosti a ochrany")
     
     st.divider()
-    if st.button("🔄 Načítať / Resetovať cyklus", use_container_width=True, on_click=reset_cycle):
-        st.toast("Cyklus bol úspešne načítaný pre vybraný mesiac.")
+    # Tlačidlo teraz volá funkciu, ktorá zmení unikátny kľúč tabuľky
+    st.button("🔄 Načítať / Resetovať cyklus", use_container_width=True, on_click=reset_cycle)
 
 # --- LOGIKA VÝPOČTU ---
 cykly = {"Zmena 1": "DNVDNVVV", "Zmena 2": "VVDNVDNV", "Zmena 3": "VDNVVVDN", "Zmena 4": "NVVVDNVD"}
@@ -44,7 +46,6 @@ st.subheader(f"Upresnenie dní pre {mesiac_meno} ({zmena_skupina})")
 
 # --- INTERAKTÍVNA TABUĽKA ---
 vysledne_dni = []
-# Hlavička tabuľky
 h1, h2, h3, h4, h5 = st.columns([0.5, 0.5, 0.5, 1, 1.5])
 h1.write("**Deň**")
 h2.write("**D**")
@@ -60,12 +61,17 @@ for d in range(1, dni_count + 1):
     def_d = (vzor[pos] == "D")
     def_n = (vzor[pos] == "N")
     
+    # Kľúč widgetu obsahuje reset_counter - pri zmene counteru Streamlit vytvorí nové widgety
+    k_d = f"d_{d}_{st.session_state.reset_counter}"
+    k_n = f"n_{d}_{st.session_state.reset_counter}"
+    k_a = f"a_{d}_{st.session_state.reset_counter}"
+    
     col1, col2, col3, col4, col5 = st.columns([0.5, 0.5, 0.5, 1, 1.5])
     
     with col1: st.write(f"{d}.")
-    with col2: d_val = st.checkbox(" ", value=def_d, key=f"d_{d}")
-    with col3: n_val = st.checkbox(" ", value=def_n, key=f"n_{d}")
-    with col4: abs_val = st.text_input("Abs", key=f"a_{d}", label_visibility="collapsed", placeholder="D/KZ/PN/L")
+    with col2: d_val = st.checkbox(" ", value=def_d, key=k_d, label_visibility="collapsed")
+    with col3: n_val = st.checkbox(" ", value=def_n, key=k_n, label_visibility="collapsed")
+    with col4: abs_val = st.text_input("Abs", key=k_a, label_visibility="collapsed", placeholder="D/KZ/PN/L")
     with col5: 
         label = f"{dt.strftime('%d.%m.')} ({DNI_SK[dt.weekday()]})"
         if dt.weekday() >= 5: st.write(f":orange[{label}]")
@@ -87,8 +93,7 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
     f_bold = Font(name='Arial', size=9, bold=True)
     f_norm = Font(name='Arial', size=9)
     align_c = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    side = Side(style='thin')
-    border = Border(left=side, right=side, top=side, bottom=side)
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
     fill_sat, fill_sun, fill_hol = PatternFill("solid", "FFFF00"), PatternFill("solid", "00FF00"), PatternFill("solid", "00CCFF")
 
     # Hlavička dokumentu
@@ -98,7 +103,7 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
     ws['A6'], ws['C6'] = "Zamestnanec:", meno
     for c in ['C4', 'I4', 'C6']: ws[c].font = f_bold
 
-    # Hlavička tabuľky
+    # Hlavička tabuľky (A8:J10)
     ws.merge_cells('A8:A10'); ws['A8'] = "Dátum"
     ws.merge_cells('B8:B10'); ws['B8'] = "Pracovná doba"
     ws.merge_cells('C8:C10'); ws['C8'] = "Odprac.\nhod.\nspolu"
@@ -134,8 +139,7 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
             if dow == 4: h_sn = 6.0   # Pi-So
             elif dow == 5: h_sn = 11.5 # So-Ne
             elif dow == 6: h_sn = 5.5  # Ne-Po
-            # Logika: Ak zmena začína vo sviatok, celá sa ráta do sviatku
-            if is_sviatok: h_sv = 11.5
+            if is_sviatok: h_sv = 11.5 # Ak zmena začína vo sviatok
 
         line = [d, p_doba, h_sp, h_sn, h_no, "", "", h_sv, "", ""]
         for idx, val in enumerate(line, 1):
@@ -163,8 +167,7 @@ if st.button("💾 VYGENEROVAŤ EXCEL VÝKAZ", type="primary", use_container_wid
     sig_r = s_row + 3
     ws.merge_cells(f'B{sig_r}:D{sig_r}'); ws[f'B{sig_r}'] = "____________________________"; ws[f'B{sig_r}'].alignment = align_c
     ws.merge_cells(f'G{sig_r}:I{sig_r}'); ws[f'G{sig_r}'] = "____________________________"; ws[f'G{sig_r}'].alignment = align_c
-    ws.merge_cells(f'B{sig_r+1}:D{sig_r+1}'); ws[f'B{sig_r+1}'] = "podpis zamestnanca"; ws[f'B{sig_r+1}'].alignment = align_c
-    ws.merge_cells(f'G{sig_r+1}:I{sig_r+1}'); ws[f'G{sig_r+1}'] = "podpis vedúceho"; ws[f'G{sig_r+1}'].alignment = align_c
+    ws[f'B{sig_r+1}'] = "podpis zamestnanca"; ws[f'G{sig_r+1}'] = "podpis vedúceho"; ws[f'B{sig_r+1}'].alignment = align_c; ws[f'G{sig_r+1}'].alignment = align_c
 
     widths = [6, 18, 10, 10, 10, 10, 10, 10, 10, 10]
     for i, w in enumerate(widths, 1): ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
