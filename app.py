@@ -35,7 +35,7 @@ st.title("📄 Generátor pracovného výkazu")
 # --- BOČNÝ PANEL ---
 with st.sidebar:
     st.header("Nastavenia")
-    meno = st.text_input("Meno a Priezvisko:", placeholder="Martin Haluska")
+    meno = st.text_input("Meno a Priezvisko:", placeholder="Meno Priezvisko")
     mesiac_meno = st.selectbox("Mesiac:", MESIACE_SK, index=date.today().month - 1)
     mesiac_idx = MESIACE_SK.index(mesiac_meno) + 1
     rok_val = st.selectbox("Rok:", list(range(2024, 2031)), index=2)
